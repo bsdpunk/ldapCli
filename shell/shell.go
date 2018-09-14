@@ -1,5 +1,6 @@
 package shell
 
+import "../explore"
 import "fmt"
 import "os"
 import "strings"
@@ -82,43 +83,50 @@ func connect() (*ldap.Conn, error) {
 	return conn, nil
 }
 
+var Commands = []cli.Command{
+	{
+		Name:   "GetAllDNs",
+		Usage:  "Get All DNs",
+		Action: command.CmdGetAllDNs,
+		Flags:  []cli.Flag{},
+	},
+	{
+		Name:   "GetAllThirds",
+		Usage:  "Get All DNs",
+		Action: command.CmdGetAllThirds,
+		Flags:  []cli.Flag{},
+	},
+
+	{
+		Name:   "GetAllAttr",
+		Usage:  "Get All Attributes",
+		Action: command.CmdGetAllAttr,
+		Flags:  []cli.Flag{},
+	},
+	{
+		Name:   "Search",
+		Usage:  "Search LDAP",
+		Action: command.CmdSearch,
+		Flags:  []cli.Flag{},
+	},
+
+	{
+		Name:   "arp",
+		Usage:  "",
+		Action: command.CmdArp,
+		Flags:  []cli.Flag{},
+	},
+	//	{
+	//		Name:   "GetAllDNs",
+	//		Usage:  "",
+	//		Action: command.CmdHeyo,
+	//		Flags:  []cli.Flag{},
+	//	},
+}
+
 func Run() {
 	//	conn, err = connect()
 	command.InitLDAP()
-	var Commands = []cli.Command{
-		{
-			Name:   "GetAllDNs",
-			Usage:  "Get All DNs",
-			Action: command.CmdGetAllDNs,
-			Flags:  []cli.Flag{},
-		},
-		{
-			Name:   "GetAllThirds",
-			Usage:  "Get All DNs",
-			Action: command.CmdGetAllThirds,
-			Flags:  []cli.Flag{},
-		},
-
-		{
-			Name:   "GetAllAttr",
-			Usage:  "Get All Attributes",
-			Action: command.CmdGetAllAttr,
-			Flags:  []cli.Flag{},
-		},
-
-		{
-			Name:   "arp",
-			Usage:  "",
-			Action: command.CmdArp,
-			Flags:  []cli.Flag{},
-		},
-		//	{
-		//		Name:   "GetAllDNs",
-		//		Usage:  "",
-		//		Action: command.CmdHeyo,
-		//		Flags:  []cli.Flag{},
-		//	},
-	}
 
 	for _, c := range Commands {
 		words = append(words, c.Name)
@@ -145,24 +153,37 @@ L:
 			os.Exit(1)
 		} else if input == "ls" {
 			fmt.Println(Commands)
+		} else if input == "Explore" {
+			prompt = "Explore> "
+			ns := command.Explore()
+			for _, newWord := range ns.ReturnThird() {
+				words = append(words, newWord)
+			}
+			explore.Extui()
+
 		} else {
 
 			for _, c := range Commands {
-				if c.HasName(input) {
+				splitInput := strings.Split(input, " ")
+				if c.HasName(splitInput[0]) {
 
 					var command []string
-					command = append(command, "beastietools")
-					command = append(command, input)
+					command = append(command, "")
+					for _, i := range splitInput {
+
+						command = append(command, i)
+					}
+
 					app := cli.NewApp()
 					app.Author = "bsdpunk"
 					app.Email = ""
 					app.Usage = ""
-					app.Name = "beastietools"
+					app.Name = splitInput[0]
 					app.Version = "0.1.0"
-
+					//app.Arg
 					app.Flags = GlobalFlags
 					app.Commands = Commands
-					app.CommandNotFound = CommandNotFound
+					//app.CommandNotFound = CommandNotFound
 
 					app.Run(command)
 					found = "yes"

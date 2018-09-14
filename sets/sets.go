@@ -34,8 +34,18 @@ func (s *Set) PrintAll() {
 	}
 }
 
-func (s []string) length() {
-	return len(s) - 1
+func (s *Set) ReturnThird() []string {
+	var sThird []string
+	var listT []string
+	for v, _ := range s.m {
+		sThird = strings.Split(v, ",")
+		lengthThird := len(sThird)
+		if lengthThird > 3 {
+			listT = append(listT, sThird[lengthThird-3])
+
+		}
+	}
+	return listT
 }
 
 func (s *Set) PrintThird() {

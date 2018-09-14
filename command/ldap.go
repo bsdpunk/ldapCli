@@ -6,6 +6,7 @@ import (
 	"gopkg.in/ldap.v2"
 	"os"
 	//	"strings"
+	//	"../Explore"
 	"github.com/urfave/cli"
 	"log"
 )
@@ -109,7 +110,30 @@ func CmdGetAllDNs(c *cli.Context) {
 	//fmt.Println(strings.Join(theSplit, ", "))
 	ns.PrintAll()
 }
+func CmdSearch(c *cli.Context) {
+	fmt.Println(c.Args())
+	l := ldap.NewSearchRequest(
+		baseDN,
+		ldap.ScopeWholeSubtree,
+		ldap.NeverDerefAliases,
+		0,
+		0,
+		false,
+		c.Args().Get(0),
+		[]string{},
+		nil,
+	)
+	sr, err := ld.Search(l)
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	for _, entry := range sr.Entries {
+		entry.Print()
+		fmt.Println("")
+	}
+	return
+}
 func CmdGetAllThirds(c *cli.Context) {
 	//conn = ld
 	l := ldap.NewSearchRequest(
@@ -138,4 +162,35 @@ func CmdGetAllThirds(c *cli.Context) {
 	}
 
 	ns.PrintThird()
+}
+
+func Explore() (ns *sets.Set) {
+	//conn = ld
+	l := ldap.NewSearchRequest(
+		baseDN,
+		ldap.ScopeWholeSubtree,
+		ldap.NeverDerefAliases,
+		0,
+		0,
+		false,
+		"(objectClass=*)",
+		[]string{},
+		nil,
+	)
+	//fmt.Println(c.Ldap())
+	//fmt.Println(c)
+	//conn := c.Conn
+	sr, err := ld.Search(l)
+	if err != nil {
+		log.Fatal(err)
+	}
+	s := sets.NewSet()
+	for _, entry := range sr.Entries {
+		//entry.PrettyPrint(1)
+		s.Add(entry.DN)
+		//	fmt.Println(entry.DN)
+	}
+
+	//ns.PrintThird()
+	return s
 }

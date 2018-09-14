@@ -13,7 +13,7 @@ var Commands = []cli.Command{
 	{
 		Name:   "GetAllDNs",
 		Usage:  "Get all Distinguished Names",
-		Action: command.CmdGetAllDNs(),
+		Action: command.CmdGetAllDNs,
 		Flags:  []cli.Flag{},
 	},
 	{
