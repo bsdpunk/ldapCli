@@ -1,6 +1,7 @@
 package sets
 
 import "fmt"
+import "strings"
 
 var exists = struct{}{}
 
@@ -30,5 +31,22 @@ func (s *Set) Contains(value string) bool {
 func (s *Set) PrintAll() {
 	for v, _ := range s.m {
 		fmt.Println(v)
+	}
+}
+
+func (s []string) length() {
+	return len(s) - 1
+}
+
+func (s *Set) PrintThird() {
+	var sThird []string
+	for v, _ := range s.m {
+		sThird = strings.Split(v, ",")
+		fmt.Println(sThird[1])
+		lengthThird := len(sThird)
+		if lengthThird > 4 {
+			third := sThird[lengthThird-3]
+			fmt.Println(third)
+		}
 	}
 }

@@ -109,3 +109,33 @@ func CmdGetAllDNs(c *cli.Context) {
 	//fmt.Println(strings.Join(theSplit, ", "))
 	ns.PrintAll()
 }
+
+func CmdGetAllThirds(c *cli.Context) {
+	//conn = ld
+	l := ldap.NewSearchRequest(
+		baseDN,
+		ldap.ScopeWholeSubtree,
+		ldap.NeverDerefAliases,
+		0,
+		0,
+		false,
+		"(objectClass=*)",
+		[]string{},
+		nil,
+	)
+	//fmt.Println(c.Ldap())
+	//fmt.Println(c)
+	//conn := c.Conn
+	sr, err := ld.Search(l)
+	if err != nil {
+		log.Fatal(err)
+	}
+	ns := sets.NewSet()
+	for _, entry := range sr.Entries {
+		//entry.PrettyPrint(1)
+		ns.Add(entry.DN)
+		//	fmt.Println(entry.DN)
+	}
+
+	ns.PrintThird()
+}

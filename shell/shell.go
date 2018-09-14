@@ -92,6 +92,12 @@ func Run() {
 			Action: command.CmdGetAllDNs,
 			Flags:  []cli.Flag{},
 		},
+		{
+			Name:   "GetAllThirds",
+			Usage:  "Get All DNs",
+			Action: command.CmdGetAllThirds,
+			Flags:  []cli.Flag{},
+		},
 
 		{
 			Name:   "GetAllAttr",
