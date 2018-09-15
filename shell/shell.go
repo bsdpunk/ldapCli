@@ -133,6 +133,7 @@ func Run() {
 	}
 	words = append(words, "quit")
 	words = append(words, "ls")
+	words = append(words, "Explore")
 
 	prompt := "goldap> "
 	matches = make([]string, 0, len(words))
