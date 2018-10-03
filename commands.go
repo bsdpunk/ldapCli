@@ -10,18 +10,45 @@ import (
 var GlobalFlags = []cli.Flag{}
 
 var Commands = []cli.Command{
+
 	{
 		Name:   "GetAllDNs",
-		Usage:  "Get all Distinguished Names",
+		Usage:  "Get All DNs",
 		Action: command.CmdGetAllDNs,
 		Flags:  []cli.Flag{},
 	},
 	{
+		Name:   "GetAllThirds",
+		Usage:  "Get All DNs",
+		Action: command.CmdGetAllThirds,
+		Flags:  []cli.Flag{},
+	},
+
+	{
+		Name:   "GetAllAttr",
+		Usage:  "Get All Attributes",
+		Action: command.CmdGetAllAttr,
+		Flags:  []cli.Flag{},
+	},
+	{
+		Name:   "Search",
+		Usage:  "Search LDAP",
+		Action: command.CmdSearch,
+		Flags:  []cli.Flag{},
+	},
+
+	{
 		Name:   "arp",
-		Usage:  "Show ARP table",
+		Usage:  "",
 		Action: command.CmdArp,
 		Flags:  []cli.Flag{},
 	},
+	//	{
+	//		Name:   "GetAllDNs",
+	//		Usage:  "",
+	//		Action: command.CmdHeyo,
+	//		Flags:  []cli.Flag{},
+	//	},
 }
 
 func CommandNotFound(c *cli.Context, command string) {
