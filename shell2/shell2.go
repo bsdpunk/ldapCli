@@ -2,6 +2,9 @@ package shell2
 
 import "strconv"
 
+//import "path"
+import "path/filepath"
+
 //import "../explore"
 import "fmt"
 import "os"
@@ -9,7 +12,7 @@ import "strings"
 import "github.com/urfave/cli"
 import "../command"
 import "github.com/gobs/readline"
-import "github.com/lobocv/itree/ctx"
+import "../ad"
 import "github.com/nsf/termbox-go"
 import "gopkg.in/ldap.v2"
 import "math"
@@ -28,6 +31,11 @@ var (
 	loginPassword = string(os.Getenv("LDAPPassword"))
 )
 
+func fatal(err error) {
+	fmt.Fprintln(os.Stderr, fmt.Sprintf("%v", err))
+	os.Exit(1)
+}
+
 type ScreenState int
 
 const (
@@ -37,7 +45,7 @@ const (
 
 type Screen struct {
 	SearchString []rune
-	CurrentDir   *ctx.Directory
+	CurrentDir   *ad.Directory
 	state        ScreenState
 	captureInput bool
 
@@ -187,6 +195,57 @@ L:
 			//}
 			//explore.Extui()
 
+			var err error
+
+			for _, arg := range os.Args {
+				switch arg {
+				case "-h", "--help":
+					fmt.Fprintln(os.Stderr, "itree - A visual file system navigation tool.\n"+
+						"Press h for information on hotkeys.")
+					os.Exit(0)
+				}
+			}
+
+			cwd, err := os.Getwd()
+			if err != nil {
+				panic("Cannot get current working directory")
+			}
+			cwd, err = filepath.Abs(cwd)
+			if err != nil {
+				panic("Cannot get absolute directory.")
+			}
+
+			// Initialize the library that draws to the terminal
+			err = termbox.Init()
+			if err != nil {
+				panic(err)
+			}
+			defer termbox.Close()
+
+			// Set the current directory context
+			var curDir *ad.Directory
+			curDir, err = ad.CreateDirectoryChain(cwd)
+			if curDir == nil {
+				fatal(err)
+			}
+			if err != nil {
+				fatal(err)
+			}
+
+			s := Screen{make([]rune, 0, 100),
+				curDir,
+				Directory,
+				false,
+				termbox.ColorCyan,
+				termbox.ColorGreen,
+				termbox.ColorYellow,
+				termbox.ColorWhite,
+			}
+			finalPath := s.Main()
+			// We must print the directory we end up in so that we can change to it
+			// If we end up selecting a directory item, then change into that directory,
+			// If we end up on a file item, change into that files directory
+			fmt.Print(finalPath)
 		} else {
 
 			for _, c := range Commands {
@@ -272,10 +331,10 @@ func (s *Screen) draw() {
 	termbox.Flush()
 }
 
-func (s *Screen) getDirView(upperLevels int) ctx.DirView {
+func (s *Screen) getDirView(upperLevels int) ad.DirView {
 	// Create a slice of the directory chain containing upperLevels number of parents
 	dir := s.CurrentDir
-	dirlist := make([]*ctx.Directory, 0, 1+upperLevels)
+	dirlist := make([]*ad.Directory, 0, 1+upperLevels)
 	//	ns := Explore()
 	dirlist = append(dirlist, dir)
 
@@ -288,7 +347,7 @@ func (s *Screen) getDirView(upperLevels int) ctx.DirView {
 		if ii >= upperLevels {
 			break
 		}
-		dirlist = append([]*ctx.Directory{next}, dirlist...)
+		dirlist = append([]*ad.Directory{next}, dirlist...)
 		next = next.Parent
 	}
 	return dirlist
@@ -305,7 +364,7 @@ func (s *Screen) Print(x, y int, fg, bg termbox.Attribute, msg string) {
 	}
 }
 
-func (s *Screen) drawDirContents(x0, y0 int, dirlist ctx.DirView) error {
+func (s *Screen) drawDirContents(x0, y0 int, dirlist ad.DirView) error {
 	var levelOffsetX, levelOffsetY int // draw position offset
 	var stretch int                    // Length of line connecting subdirectories
 	var maxLineWidth int               // Length of longest item in the directory
@@ -421,4 +480,82 @@ func (s *Screen) drawDirContents(x0, y0 int, dirlist ctx.DirView) error {
 	}
 
 	return nil
+}
+
+func (s *Screen) toggleIndexToExtremities() {
+	if s.CurrentDir.FileIdx == 0 {
+		s.CurrentDir.FileIdx = len(s.CurrentDir.Files) - 1
+	} else {
+		s.CurrentDir.FileIdx = 0
+	}
+}
+
+func (s *Screen) Main() string {
+
+MainLoop:
+	for {
+		s.draw()
+
+		ev := termbox.PollEvent()
+		if s.captureInput {
+			if ev.Key == termbox.KeyEsc || ev.Key == termbox.KeyCtrlC {
+				s.stopCapturingInput()
+				continue
+			} else if ev.Key == termbox.KeyBackspace2 || ev.Key == termbox.KeyBackspace {
+				s.popFromSearchString()
+			} else if ev.Ch != 0 {
+				s.appendToSearchString(ev.Ch)
+				continue MainLoop
+			}
+		}
+
+		switch ev.Type {
+		case termbox.EventKey:
+			switch ev.Key {
+			case termbox.KeyEsc, termbox.KeyCtrlC:
+				break MainLoop
+			case termbox.KeyArrowUp:
+				s.CurrentDir.MoveSelector(-1)
+			case termbox.KeyArrowDown:
+				s.CurrentDir.MoveSelector(1)
+			case termbox.KeyArrowLeft:
+				s.exitCurrentDirectory()
+			case termbox.KeyArrowRight:
+				s.enterCurrentDirectory()
+			case termbox.KeyPgup:
+				s.jumpUp()
+			case termbox.KeyPgdn:
+				s.jumpDown()
+			case termbox.KeyCtrlH:
+				s.toggleHelp()
+			}
+			switch ev.Ch {
+			case 'q':
+				break MainLoop
+			case '/':
+				s.startCapturingInput()
+			case 'h':
+				s.CurrentDir.SetShowHidden(!s.CurrentDir.ShowHidden)
+			case 'a':
+				s.exitCurrentDirectory()
+				s.exitCurrentDirectory()
+			case 'e':
+				s.jumpUp()
+			case 'd':
+				s.jumpDown()
+			case 'c':
+				s.toggleIndexToExtremities()
+			}
+		}
+
+	}
+
+	// Return the directory we end up in
+	currentItem, err := s.CurrentDir.CurrentFile()
+	if err == nil && currentItem.IsDir() && os.Getenv("EnterLastSelected") == "1" {
+		return path.Join(s.CurrentDir.AbsPath, currentItem.Name())
+	} else {
+		return s.CurrentDir.AbsPath
+	}
+
 }

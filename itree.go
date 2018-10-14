@@ -34,7 +34,7 @@ const (
 // Screen represents the application
 type Screen struct {
 	SearchString []rune
-	CurrentDir   *ctx.Directory
+	CurrentDir   *ad.Directory
 	state        ScreenState
 	captureInput bool
 
